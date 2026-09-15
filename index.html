@@ -6,16 +6,9 @@
 <title>لوحة متابعة الشحن</title>
 <style>
   :root{
-    --navy:#0f2a3d;
-    --navy-2:#173d54;
-    --paper:#f6f4ef;
-    --amber:#dd9a35;
-    --amber-dark:#b97b1f;
-    --teal:#2f6f6b;
-    --red:#b5473f;
-    --green:#3f7d5c;
-    --line:#d9d4c8;
-    --ink:#1c1c1c;
+    --navy:#0f2a3d; --navy-2:#173d54; --paper:#f6f4ef;
+    --amber:#dd9a35; --amber-dark:#b97b1f; --teal:#2f6f6b;
+    --red:#b5473f; --green:#3f7d5c; --line:#d9d4c8; --ink:#1c1c1c;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--paper);color:var(--ink);font-family:"Segoe UI","Tahoma",sans-serif;min-height:100vh;}
@@ -35,12 +28,8 @@
   label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px;color:#3a3a34;}
   input[type=text], input[type=email], select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-size:14px;background:#fdfcfa;font-family:inherit;}
   input:focus, select:focus{outline:2px solid var(--navy-2);outline-offset:1px;}
-  .role-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
-  .role-pick button{padding:10px 6px;border:1px solid var(--line);background:#fdfcfa;border-radius:4px;cursor:pointer;font-size:12.5px;font-weight:600;color:#4a4a44;}
-  .role-pick button.active{border-color:var(--navy);background:var(--navy);color:#fff;}
   .primary-btn{margin-top:22px;width:100%;padding:12px;background:var(--amber);color:#221802;border:none;border-radius:4px;font-weight:800;font-size:14.5px;cursor:pointer;}
   .primary-btn:hover{background:var(--amber-dark);color:#fff;}
-  .primary-btn:disabled{opacity:.6;cursor:default;}
   .err{color:var(--red);font-size:12.5px;margin-top:10px;min-height:14px;}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
   .stat{background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px 16px;}
@@ -53,6 +42,7 @@
   .panel-head h3{margin:0;font-size:15.5px;}
   .add-btn{background:var(--navy);color:#fff;border:none;border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:600;}
   .add-btn:hover{background:var(--navy-2);}
+  .add-btn.secondary{background:var(--teal);}
   table{width:100%;border-collapse:collapse;font-size:13px;}
   th{background:#f1efe7;text-align:right;padding:9px 10px;font-size:12px;color:#5a5a52;border-bottom:1px solid var(--line);white-space:nowrap;}
   td{padding:9px 10px;border-bottom:1px solid #eeece4;vertical-align:middle;}
@@ -67,6 +57,7 @@
   .status-محدش-رد{background:#fbe9e7;color:var(--red);}
   .status-مؤجل{background:#fdf2df;color:var(--amber-dark);}
   .status-ملغي{background:#eee;color:#777;}
+  .role-tag{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:700;display:inline-block;background:#eef2f6;color:var(--navy);}
   .resolved-yes{color:var(--green);font-weight:700;}
   .resolved-no{color:var(--red);font-weight:700;}
   .empty{padding:40px 20px;text-align:center;color:#8a877c;font-size:13.5px;}
@@ -79,25 +70,21 @@
   .btn-cancel{background:#eee;color:#444;}
   .btn-save{background:var(--navy);color:#fff;}
   .small-note{font-size:11.5px;color:#918d80;margin-top:6px;}
-  .top-msg{background:#fdf2df;color:var(--amber-dark);padding:10px 24px;font-size:12.5px;text-align:center;}
+  .del-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:12.5px;font-weight:700;}
 </style>
 </head>
 <body>
-
 <div id="app"></div>
-
 <script>
-/* ============================================================
-   عشان الموقع يشتغل، لازم تحط هنا رابط الـ Google Apps Script
-   اللي هتاخده بعد ما تعمل Deploy للسكريبت (خطوات في README)
-   ============================================================ */
-const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzN6NqjRa9wSJG6l1LkYu3RkXFoORsV5c6814jJ-c9BlDW00ug4_iAYv0PUfUjPxZPrbQ/exec";
+/* حط هنا رابط الـ Google Apps Script بعد الـ Deploy */
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzN6NqjRa9wSJG6l1LkYu3RkXFoORsV5c6814jJ-c9BlDW00ug4_iAYv0PUfUjPxZPrbQ/exec
+";
 
 const STATUSES = ["اتصال جاري","محدش رد","تم التسليم","مؤجل","ملغي"];
 
 let session = null;
 let orders = [];
-let reps = [];
+let users = [];   // {name, email, role}
 let loading = true;
 let apiError = false;
 
@@ -112,16 +99,14 @@ async function apiGet(action){
 async function apiSave(action, payload){
   await fetch(`${SHEET_API_URL}?action=${action}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload)
   });
 }
 
 function loadSession(){
-  try{
-    const raw = localStorage.getItem('session');
-    session = raw ? JSON.parse(raw) : null;
-  }catch(e){ session = null; }
+  try{ const raw = localStorage.getItem('session'); session = raw ? JSON.parse(raw) : null; }
+  catch(e){ session = null; }
 }
 function saveSession(){ localStorage.setItem('session', JSON.stringify(session)); }
 function clearSession(){ localStorage.removeItem('session'); }
@@ -131,20 +116,17 @@ async function loadAll(){
   if(!isConfigured()){ loading = false; render(); return; }
   try{
     orders = await apiGet('orders');
-    reps = await apiGet('reps');
+    users = await apiGet('users');
     apiError = false;
-  }catch(e){
-    apiError = true;
-    orders = []; reps = [];
-  }
+  }catch(e){ apiError = true; orders = []; users = []; }
   loading = false;
   render();
 }
 
 async function saveOrders(){ await apiSave('saveOrders', orders); }
-async function saveReps(){ await apiSave('saveReps', reps); }
+async function saveUsers(){ await apiSave('saveUsers', users); }
 
-function uid(){ return 'o' + Date.now() + Math.floor(Math.random()*999); }
+function uid(){ return 'x' + Date.now() + Math.floor(Math.random()*999); }
 function computeAttempts(o){ return (o.whatsappSent?1:0) + (o.called?1:0); }
 
 function render(){
@@ -152,7 +134,7 @@ function render(){
   if(!isConfigured()){
     app.innerHTML = `<div class="login-shell"><div class="login-card">
       <h2>الإعداد ناقص خطوة</h2>
-      <p class="hint">لازم تحط رابط الـ Google Apps Script في أول ملف index.html، في السطر بتاع SHEET_API_URL. راجع ملف README المرفق.</p>
+      <p class="hint">حط رابط الـ Google Apps Script في أول الملف مكان SHEET_API_URL. راجع README.</p>
     </div></div>`;
     return;
   }
@@ -161,25 +143,15 @@ function render(){
   renderDashboard(app);
 }
 
-/* ---------------- LOGIN ---------------- */
-let pickedRole = 'rep';
-
+/* ---------------- LOGIN (بالبريد بس، الدور بيتحدد من شيت المستخدمين) ---------------- */
 function renderLogin(app){
   app.innerHTML = `
   <div class="login-shell">
     <div class="login-card">
       <div class="mark">ش</div>
       <h2>نظام متابعة الشحن</h2>
-      <p class="hint">سجّل باسمك وبريدك الإلكتروني — من غير كلمة مرور، هيفتكرك المتصفح ده تلقائيًا.</p>
+      <p class="hint">سجّل بالبريد الإلكتروني اللي المدير ضافهولك. الدور بيتحدد تلقائي — من غير كلمة مرور، وهيفتكرك المتصفح ده تاني مرة.</p>
       ${apiError ? '<div class="err" style="margin-bottom:10px">مفيش اتصال بالشيت دلوقتي، جرب تاني كمان شوية.</div>' : ''}
-      <label>الدور</label>
-      <div class="role-pick" id="rolePick">
-        <button data-role="rep" class="${pickedRole==='rep'?'active':''}">مندوب</button>
-        <button data-role="followup" class="${pickedRole==='followup'?'active':''}">متابعة</button>
-        <button data-role="admin" class="${pickedRole==='admin'?'active':''}">مدير</button>
-      </div>
-      <label>الاسم</label>
-      <input type="text" id="loginName" placeholder="مثلاً: أحمد محمد">
       <label>البريد الإلكتروني</label>
       <input type="email" id="loginEmail" placeholder="name@example.com">
       <button class="primary-btn" id="loginBtn">دخول</button>
@@ -187,26 +159,14 @@ function renderLogin(app){
     </div>
   </div>`;
 
-  document.getElementById('rolePick').addEventListener('click', (e)=>{
-    const b = e.target.closest('button'); if(!b) return;
-    pickedRole = b.dataset.role;
-    renderLogin(app);
-  });
-
-  document.getElementById('loginBtn').addEventListener('click', async ()=>{
-    const name = document.getElementById('loginName').value.trim();
-    const email = document.getElementById('loginEmail').value.trim();
+  document.getElementById('loginBtn').addEventListener('click', ()=>{
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
     const errBox = document.getElementById('loginErr');
-    if(!name || !email){ errBox.textContent = 'من فضلك اكتب الاسم والبريد الإلكتروني.'; return; }
-    if(!email.includes('@')){ errBox.textContent = 'البريد الإلكتروني غير صحيح.'; return; }
-
-    session = { name, email, role: pickedRole };
+    if(!email || !email.includes('@')){ errBox.textContent = 'اكتب بريد إلكتروني صحيح.'; return; }
+    const match = users.find(u => (u.email||'').trim().toLowerCase() === email);
+    if(!match){ errBox.textContent = 'البريد ده مش مسجل. كلّم المدير عشان يضيفك في شيت المستخدمين.'; return; }
+    session = { name: match.name, email: match.email, role: match.role };
     saveSession();
-
-    if(pickedRole === 'rep' && !reps.find(r=>r.name.trim() === name)){
-      reps.push({ name, email });
-      await saveReps();
-    }
     render();
   });
 }
@@ -218,17 +178,20 @@ function visibleOrders(){
 }
 function roleLabel(r){ return r==='rep' ? 'مندوب' : r==='followup' ? 'متابعة' : 'مدير'; }
 
+let showUsersPanel = false;
+
 function renderDashboard(app){
   const vis = visibleOrders();
   const pending = vis.filter(o=>!o.resolved).length;
   const stuck = vis.filter(o=>!o.resolved && computeAttempts(o)>=2).length;
   const resolved = vis.filter(o=>o.resolved).length;
+  const isAdmin = session.role === 'admin';
 
   app.innerHTML = `
   <div class="topbar">
     <div>
       <h1>لوحة متابعة الشحن</h1>
-      <div class="sub">تتبّع أوردرات الشحن والمتابعة مع المناديب — متزامن مع Google Sheet</div>
+      <div class="sub">تتبّع أوردرات الشحن والمتابعة مع المناديب</div>
     </div>
     <div class="who">
       <span>${session.name}</span>
@@ -244,10 +207,23 @@ function renderDashboard(app){
       <div class="stat warn"><div class="num">${stuck}</div><div class="lbl">محتاجة متابعة عاجلة</div></div>
       <div class="stat ok"><div class="num">${resolved}</div><div class="lbl">اتحلت</div></div>
     </div>
+
+    ${isAdmin ? `
+    <div class="panel">
+      <div class="panel-head">
+        <h3>إدارة المستخدمين</h3>
+        <div style="display:flex;gap:8px">
+          <button class="add-btn secondary" id="toggleUsersBtn">${showUsersPanel ? 'إخفاء' : 'عرض'}</button>
+          <button class="add-btn" id="addUserBtn">+ إضافة مستخدم</button>
+        </div>
+      </div>
+      ${showUsersPanel ? `<div class="table-scroll">${renderUsersTable()}</div>` : ''}
+    </div>` : ''}
+
     <div class="panel">
       <div class="panel-head">
         <h3>الأوردرات</h3>
-        ${session.role==='admin' ? '<button class="add-btn" id="addOrderBtn">+ إضافة أوردر</button>' : ''}
+        ${isAdmin ? '<button class="add-btn" id="addOrderBtn">+ إضافة أوردر</button>' : ''}
       </div>
       <div class="table-scroll">
         ${vis.length ? renderTable(vis) : '<div class="empty">مفيش أوردرات لسه.</div>'}
@@ -255,16 +231,27 @@ function renderDashboard(app){
     </div>
   </div>`;
 
-  document.getElementById('logoutBtn').addEventListener('click', ()=>{
-    session = null; clearSession(); render();
-  });
-  document.getElementById('refreshBtn').addEventListener('click', async ()=>{
-    loading = true; render();
-    await loadAll();
-  });
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{ session = null; clearSession(); render(); });
+  document.getElementById('refreshBtn').addEventListener('click', async ()=>{ loading = true; render(); await loadAll(); });
 
-  const addBtn = document.getElementById('addOrderBtn');
-  if(addBtn) addBtn.addEventListener('click', ()=> openOrderModal());
+  const addOrderBtn = document.getElementById('addOrderBtn');
+  if(addOrderBtn) addOrderBtn.addEventListener('click', ()=> openOrderModal());
+
+  const addUserBtn = document.getElementById('addUserBtn');
+  if(addUserBtn) addUserBtn.addEventListener('click', ()=> openUserModal());
+
+  const toggleUsersBtn = document.getElementById('toggleUsersBtn');
+  if(toggleUsersBtn) toggleUsersBtn.addEventListener('click', ()=>{ showUsersPanel = !showUsersPanel; render(); });
+
+  users.forEach(u=>{
+    const delBtn = document.getElementById('deluser_'+u.email);
+    if(delBtn) delBtn.addEventListener('click', async ()=>{
+      if(!confirm(`متأكد إنك عايز تشيل ${u.name}؟`)) return;
+      users = users.filter(x=>x.email !== u.email);
+      await saveUsers();
+      render();
+    });
+  });
 
   vis.forEach(o=>{
     const row = document.getElementById('row_'+o.id);
@@ -282,6 +269,22 @@ function renderDashboard(app){
     const resolvedSel = row.querySelector('.resolved-sel');
     if(resolvedSel) resolvedSel.addEventListener('change', async (e)=>{ o.resolved = e.target.value === 'yes'; await saveOrders(); render(); });
   });
+}
+
+function renderUsersTable(){
+  return `
+  <table>
+    <thead><tr><th>الاسم</th><th>البريد الإلكتروني</th><th>الدور</th><th></th></tr></thead>
+    <tbody>
+      ${users.map(u=>`
+        <tr>
+          <td>${escapeHtml(u.name)}</td>
+          <td>${escapeHtml(u.email)}</td>
+          <td><span class="role-tag">${roleLabel(u.role)}</span></td>
+          <td><button class="del-btn" id="deluser_${escapeAttr(u.email)}">حذف</button></td>
+        </tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
 function renderTable(vis){
@@ -325,6 +328,7 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;',
 function escapeAttr(s){ return escapeHtml(s); }
 
 function openOrderModal(){
+  const repUsers = users.filter(u=>u.role==='rep');
   const bg = document.createElement('div');
   bg.className = 'modal-bg';
   bg.innerHTML = `
@@ -336,9 +340,11 @@ function openOrderModal(){
       <div class="field"><label>السعر</label><input type="text" id="m_price"></div>
       <div class="field">
         <label>المندوب المسؤول</label>
-        <input type="text" id="m_rep" list="repsList" placeholder="اسم المندوب بالظبط">
-        <datalist id="repsList">${reps.map(r=>`<option value="${escapeAttr(r.name)}">`).join('')}</datalist>
-        <div class="small-note">لازم الاسم يتطابق مع اسم المندوب لما يسجل دخول.</div>
+        <select id="m_rep">
+          <option value="">اختار مندوب</option>
+          ${repUsers.map(u=>`<option value="${escapeAttr(u.name)}">${escapeHtml(u.name)}</option>`).join('')}
+        </select>
+        ${repUsers.length===0 ? '<div class="small-note">مفيش مناديب مضافين لسه في شيت المستخدمين.</div>' : ''}
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" id="m_cancel">إلغاء</button>
@@ -346,7 +352,6 @@ function openOrderModal(){
       </div>
     </div>`;
   document.body.appendChild(bg);
-
   document.getElementById('m_cancel').addEventListener('click', ()=> bg.remove());
   document.getElementById('m_save').addEventListener('click', async ()=>{
     const customerName = document.getElementById('m_customer').value.trim();
@@ -354,14 +359,48 @@ function openOrderModal(){
     const company = document.getElementById('m_company').value.trim();
     const price = document.getElementById('m_price').value.trim();
     const rep = document.getElementById('m_rep').value.trim();
-    if(!customerName || !rep){ alert('اكتب على الأقل اسم العميل والمندوب.'); return; }
-    orders.push({
-      id: uid(), customerName, phone, company, price, rep,
-      whatsappSent:false, called:false, status:'اتصال جاري',
-      notes:'', followUpReply:'', resolved:false
-    });
+    if(!customerName || !rep){ alert('اكتب على الأقل اسم العميل واختار المندوب.'); return; }
+    orders.push({ id: uid(), customerName, phone, company, price, rep,
+      whatsappSent:false, called:false, status:'اتصال جاري', notes:'', followUpReply:'', resolved:false });
     await saveOrders();
     bg.remove();
+    render();
+  });
+}
+
+function openUserModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>إضافة مستخدم جديد</h3>
+      <div class="field"><label>الاسم</label><input type="text" id="u_name"></div>
+      <div class="field"><label>البريد الإلكتروني (هيسجل بيه)</label><input type="text" id="u_email" placeholder="ممكن يكون جيميل وهمي مخصص له"></div>
+      <div class="field">
+        <label>الدور</label>
+        <select id="u_role">
+          <option value="rep">مندوب</option>
+          <option value="followup">متابعة</option>
+          <option value="admin">مدير</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="u_cancel">إلغاء</button>
+        <button class="btn-save" id="u_save">حفظ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+  document.getElementById('u_cancel').addEventListener('click', ()=> bg.remove());
+  document.getElementById('u_save').addEventListener('click', async ()=>{
+    const name = document.getElementById('u_name').value.trim();
+    const email = document.getElementById('u_email').value.trim().toLowerCase();
+    const role = document.getElementById('u_role').value;
+    if(!name || !email){ alert('اكتب الاسم والبريد.'); return; }
+    if(users.find(u=>u.email.toLowerCase()===email)){ alert('البريد ده مسجل قبل كده.'); return; }
+    users.push({ name, email, role });
+    await saveUsers();
+    bg.remove();
+    showUsersPanel = true;
     render();
   });
 }
