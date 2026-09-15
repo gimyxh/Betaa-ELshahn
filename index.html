@@ -76,7 +76,7 @@
 <body>
 <div id="app"></div>
 <script>
-/* حط هنا رابط الـ Google Apps Script بعد الـ Deploy */
+/* رابط Google Apps Script الخاص بك */
 const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzeSfgLEk1Tf3iHydmbKH4os8I6QGMNKEEIVuKOfJjhG0_zGYxmRlnwtZxgBX8Qygi3pA/exec";
 
 const STATUSES = ["اتصال جاري","محدش رد","تم التسليم","مؤجل","ملغي"];
@@ -90,17 +90,21 @@ let apiError = false;
 function statusClass(s){ return "status-" + s.replace(/\s+/g,"-"); }
 function isConfigured(){ return SHEET_API_URL && SHEET_API_URL.indexOf('http') === 0; }
 
+/* === التعديل الجوهري: تصحيح علامات التنصيص لتكون Backticks === */
 async function apiGet(action){
   const res = await fetch(`${SHEET_API_URL}?action=${action}`);
   if(!res.ok) throw new Error('bad response');
   return res.json();
 }
+
 async function apiSave(action, payload){
-  await fetch(`${SHEET_API_URL}?action=${action}`, {
+  const res = await fetch(`${SHEET_API_URL}?action=${action}`, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload)
   });
+  if(!res.ok) throw new Error('bad response');
+  return res.json();
 }
 
 function loadSession(){
@@ -133,7 +137,7 @@ function render(){
   if(!isConfigured()){
     app.innerHTML = `<div class="login-shell"><div class="login-card">
       <h2>الإعداد ناقص خطوة</h2>
-      <p class="hint">حط رابط الـ Google Apps Script في أول الملف مكان SHEET_API_URL. راجع README.</p>
+      <p class="hint">حط رابط الـ Google Apps Script في أول الملف مكان SHEET_API_URL.</p>
     </div></div>`;
     return;
   }
@@ -142,7 +146,7 @@ function render(){
   renderDashboard(app);
 }
 
-/* ---------------- LOGIN (بالبريد بس، الدور بيتحدد من شيت المستخدمين) ---------------- */
+/* ---------------- LOGIN ---------------- */
 function renderLogin(app){
   app.innerHTML = `
   <div class="login-shell">
@@ -374,7 +378,7 @@ function openUserModal(){
     <div class="modal">
       <h3>إضافة مستخدم جديد</h3>
       <div class="field"><label>الاسم</label><input type="text" id="u_name"></div>
-      <div class="field"><label>البريد الإلكتروني (هيسجل بيه)</label><input type="text" id="u_email" placeholder="ممكن يكون جيميل وهمي مخصص له"></div>
+      <div class="field"><label>البريد الإلكتروني (هيسجل بيه)</label><input type="text" id="u_email" placeholder="اسم الحساب"></div>
       <div class="field">
         <label>الدور</label>
         <select id="u_role">
