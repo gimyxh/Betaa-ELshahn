@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة متابعة الشحن</title>
+<style>
+  :root{
+    --navy:#0f2a3d;
+    --navy-2:#173d54;
+    --paper:#f6f4ef;
+    --amber:#dd9a35;
+    --amber-dark:#b97b1f;
+    --teal:#2f6f6b;
+    --red:#b5473f;
+    --green:#3f7d5c;
+    --line:#d9d4c8;
+    --ink:#1c1c1c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Segoe UI","Tahoma",sans-serif;min-height:100vh;}
+  .topbar{background:var(--navy);color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .topbar h1{font-size:20px;margin:0;letter-spacing:.3px;font-weight:700;}
+  .topbar .sub{font-size:12.5px;opacity:.75;margin-top:2px;}
+  .who{display:flex;align-items:center;gap:12px;font-size:13.5px;}
+  .who .badge{background:var(--amber);color:#221802;padding:4px 10px;border-radius:3px;font-weight:700;font-size:12px;}
+  .who button{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12.5px;}
+  .who button:hover{background:rgba(255,255,255,.1);}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 18px 60px;}
+  .login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .login-card{background:#fff;border:1px solid var(--line);border-radius:6px;padding:34px 30px;width:100%;max-width:400px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+  .login-card .mark{width:38px;height:38px;background:var(--navy);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--amber);font-weight:800;margin-bottom:14px;}
+  .login-card h2{margin:0 0 4px;font-size:19px;}
+  .login-card p.hint{margin:0 0 22px;color:#6b6b64;font-size:13px;}
+  label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px;color:#3a3a34;}
+  input[type=text], input[type=email], select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-size:14px;background:#fdfcfa;font-family:inherit;}
+  input:focus, select:focus{outline:2px solid var(--navy-2);outline-offset:1px;}
+  .role-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;}
+  .role-pick button{padding:10px 6px;border:1px solid var(--line);background:#fdfcfa;border-radius:4px;cursor:pointer;font-size:12.5px;font-weight:600;color:#4a4a44;}
+  .role-pick button.active{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .primary-btn{margin-top:22px;width:100%;padding:12px;background:var(--amber);color:#221802;border:none;border-radius:4px;font-weight:800;font-size:14.5px;cursor:pointer;}
+  .primary-btn:hover{background:var(--amber-dark);color:#fff;}
+  .primary-btn:disabled{opacity:.6;cursor:default;}
+  .err{color:var(--red);font-size:12.5px;margin-top:10px;min-height:14px;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:22px;}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:6px;padding:14px 16px;}
+  .stat .num{font-size:26px;font-weight:800;color:var(--navy);}
+  .stat .lbl{font-size:12.5px;color:#6b6b64;margin-top:2px;}
+  .stat.warn .num{color:var(--red);}
+  .stat.ok .num{color:var(--green);}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:22px;}
+  .panel-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .panel-head h3{margin:0;font-size:15.5px;}
+  .add-btn{background:var(--navy);color:#fff;border:none;border-radius:4px;padding:8px 14px;font-size:13px;cursor:pointer;font-weight:600;}
+  .add-btn:hover{background:var(--navy-2);}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:#f1efe7;text-align:right;padding:9px 10px;font-size:12px;color:#5a5a52;border-bottom:1px solid var(--line);white-space:nowrap;}
+  td{padding:9px 10px;border-bottom:1px solid #eeece4;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#fafaf6;}
+  .table-scroll{overflow-x:auto;}
+  .chk{width:17px;height:17px;cursor:pointer;accent-color:var(--teal);}
+  .attempts-pill{display:inline-block;min-width:22px;text-align:center;background:var(--navy);color:#fff;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:700;}
+  select.mini, input.mini{padding:5px 7px;font-size:12.5px;border:1px solid var(--line);border-radius:3px;width:100%;min-width:90px;}
+  .status-tag{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:700;display:inline-block;}
+  .status-تم-التسليم{background:#e4f2ea;color:var(--green);}
+  .status-محدش-رد{background:#fbe9e7;color:var(--red);}
+  .status-مؤجل{background:#fdf2df;color:var(--amber-dark);}
+  .status-ملغي{background:#eee;color:#777;}
+  .resolved-yes{color:var(--green);font-weight:700;}
+  .resolved-no{color:var(--red);font-weight:700;}
+  .empty{padding:40px 20px;text-align:center;color:#8a877c;font-size:13.5px;}
+  .modal-bg{position:fixed;inset:0;background:rgba(15,42,61,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .modal{background:#fff;border-radius:6px;padding:24px;width:100%;max-width:440px;max-height:88vh;overflow-y:auto;}
+  .modal h3{margin-top:0;}
+  .modal .field{margin-bottom:12px;}
+  .modal-actions{display:flex;gap:8px;margin-top:18px;}
+  .modal-actions button{flex:1;padding:10px;border-radius:4px;border:none;font-weight:700;cursor:pointer;font-size:13.5px;}
+  .btn-cancel{background:#eee;color:#444;}
+  .btn-save{background:var(--navy);color:#fff;}
+  .small-note{font-size:11.5px;color:#918d80;margin-top:6px;}
+  .top-msg{background:#fdf2df;color:var(--amber-dark);padding:10px 24px;font-size:12.5px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   عشان الموقع يشتغل، لازم تحط هنا رابط الـ Google Apps Script
+   اللي هتاخده بعد ما تعمل Deploy للسكريبت (خطوات في README)
+   ============================================================ */
+const SHEET_API_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
+
+const STATUSES = ["اتصال جاري","محدش رد","تم التسليم","مؤجل","ملغي"];
+
+let session = null;
+let orders = [];
+let reps = [];
+let loading = true;
+let apiError = false;
+
+function statusClass(s){ return "status-" + s.replace(/\s+/g,"-"); }
+function isConfigured(){ return SHEET_API_URL && SHEET_API_URL.indexOf('http') === 0; }
+
+async function apiGet(action){
+  const res = await fetch(`${SHEET_API_URL}?action=${action}`);
+  if(!res.ok) throw new Error('bad response');
+  return res.json();
+}
+async function apiSave(action, payload){
+  await fetch(`${SHEET_API_URL}?action=${action}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+    body: JSON.stringify(payload)
+  });
+}
+
+function loadSession(){
+  try{
+    const raw = localStorage.getItem('session');
+    session = raw ? JSON.parse(raw) : null;
+  }catch(e){ session = null; }
+}
+function saveSession(){ localStorage.setItem('session', JSON.stringify(session)); }
+function clearSession(){ localStorage.removeItem('session'); }
+
+async function loadAll(){
+  loadSession();
+  if(!isConfigured()){ loading = false; render(); return; }
+  try{
+    orders = await apiGet('orders');
+    reps = await apiGet('reps');
+    apiError = false;
+  }catch(e){
+    apiError = true;
+    orders = []; reps = [];
+  }
+  loading = false;
+  render();
+}
+
+async function saveOrders(){ await apiSave('saveOrders', orders); }
+async function saveReps(){ await apiSave('saveReps', reps); }
+
+function uid(){ return 'o' + Date.now() + Math.floor(Math.random()*999); }
+function computeAttempts(o){ return (o.whatsappSent?1:0) + (o.called?1:0); }
+
+function render(){
+  const app = document.getElementById('app');
+  if(!isConfigured()){
+    app.innerHTML = `<div class="login-shell"><div class="login-card">
+      <h2>الإعداد ناقص خطوة</h2>
+      <p class="hint">لازم تحط رابط الـ Google Apps Script في أول ملف index.html، في السطر بتاع SHEET_API_URL. راجع ملف README المرفق.</p>
+    </div></div>`;
+    return;
+  }
+  if(loading){ app.innerHTML = '<div class="login-shell"><p style="color:#888">جارِ التحميل...</p></div>'; return; }
+  if(!session){ renderLogin(app); return; }
+  renderDashboard(app);
+}
+
+/* ---------------- LOGIN ---------------- */
+let pickedRole = 'rep';
+
+function renderLogin(app){
+  app.innerHTML = `
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="mark">ش</div>
+      <h2>نظام متابعة الشحن</h2>
+      <p class="hint">سجّل باسمك وبريدك الإلكتروني — من غير كلمة مرور، هيفتكرك المتصفح ده تلقائيًا.</p>
+      ${apiError ? '<div class="err" style="margin-bottom:10px">مفيش اتصال بالشيت دلوقتي، جرب تاني كمان شوية.</div>' : ''}
+      <label>الدور</label>
+      <div class="role-pick" id="rolePick">
+        <button data-role="rep" class="${pickedRole==='rep'?'active':''}">مندوب</button>
+        <button data-role="followup" class="${pickedRole==='followup'?'active':''}">متابعة</button>
+        <button data-role="admin" class="${pickedRole==='admin'?'active':''}">مدير</button>
+      </div>
+      <label>الاسم</label>
+      <input type="text" id="loginName" placeholder="مثلاً: أحمد محمد">
+      <label>البريد الإلكتروني</label>
+      <input type="email" id="loginEmail" placeholder="name@example.com">
+      <button class="primary-btn" id="loginBtn">دخول</button>
+      <div class="err" id="loginErr"></div>
+    </div>
+  </div>`;
+
+  document.getElementById('rolePick').addEventListener('click', (e)=>{
+    const b = e.target.closest('button'); if(!b) return;
+    pickedRole = b.dataset.role;
+    renderLogin(app);
+  });
+
+  document.getElementById('loginBtn').addEventListener('click', async ()=>{
+    const name = document.getElementById('loginName').value.trim();
+    const email = document.getElementById('loginEmail').value.trim();
+    const errBox = document.getElementById('loginErr');
+    if(!name || !email){ errBox.textContent = 'من فضلك اكتب الاسم والبريد الإلكتروني.'; return; }
+    if(!email.includes('@')){ errBox.textContent = 'البريد الإلكتروني غير صحيح.'; return; }
+
+    session = { name, email, role: pickedRole };
+    saveSession();
+
+    if(pickedRole === 'rep' && !reps.find(r=>r.name.trim() === name)){
+      reps.push({ name, email });
+      await saveReps();
+    }
+    render();
+  });
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function visibleOrders(){
+  if(session.role === 'rep') return orders.filter(o => o.rep && o.rep.trim() === session.name.trim());
+  return orders;
+}
+function roleLabel(r){ return r==='rep' ? 'مندوب' : r==='followup' ? 'متابعة' : 'مدير'; }
+
+function renderDashboard(app){
+  const vis = visibleOrders();
+  const pending = vis.filter(o=>!o.resolved).length;
+  const stuck = vis.filter(o=>!o.resolved && computeAttempts(o)>=2).length;
+  const resolved = vis.filter(o=>o.resolved).length;
+
+  app.innerHTML = `
+  <div class="topbar">
+    <div>
+      <h1>لوحة متابعة الشحن</h1>
+      <div class="sub">تتبّع أوردرات الشحن والمتابعة مع المناديب — متزامن مع Google Sheet</div>
+    </div>
+    <div class="who">
+      <span>${session.name}</span>
+      <span class="badge">${roleLabel(session.role)}</span>
+      <button id="refreshBtn">تحديث</button>
+      <button id="logoutBtn">تسجيل خروج</button>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat"><div class="num">${vis.length}</div><div class="lbl">إجمالي الأوردرات</div></div>
+      <div class="stat"><div class="num">${pending}</div><div class="lbl">لسه مفتوحة</div></div>
+      <div class="stat warn"><div class="num">${stuck}</div><div class="lbl">محتاجة متابعة عاجلة</div></div>
+      <div class="stat ok"><div class="num">${resolved}</div><div class="lbl">اتحلت</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <h3>الأوردرات</h3>
+        ${session.role==='admin' ? '<button class="add-btn" id="addOrderBtn">+ إضافة أوردر</button>' : ''}
+      </div>
+      <div class="table-scroll">
+        ${vis.length ? renderTable(vis) : '<div class="empty">مفيش أوردرات لسه.</div>'}
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('logoutBtn').addEventListener('click', ()=>{
+    session = null; clearSession(); render();
+  });
+  document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+    loading = true; render();
+    await loadAll();
+  });
+
+  const addBtn = document.getElementById('addOrderBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=> openOrderModal());
+
+  vis.forEach(o=>{
+    const row = document.getElementById('row_'+o.id);
+    if(!row) return;
+    const wa = row.querySelector('.wa-chk');
+    if(wa) wa.addEventListener('change', async (e)=>{ o.whatsappSent = e.target.checked; await saveOrders(); render(); });
+    const call = row.querySelector('.call-chk');
+    if(call) call.addEventListener('change', async (e)=>{ o.called = e.target.checked; await saveOrders(); render(); });
+    const statusSel = row.querySelector('.status-sel');
+    if(statusSel) statusSel.addEventListener('change', async (e)=>{ o.status = e.target.value; await saveOrders(); render(); });
+    const notesInp = row.querySelector('.notes-inp');
+    if(notesInp) notesInp.addEventListener('change', async (e)=>{ o.notes = e.target.value; await saveOrders(); });
+    const replyInp = row.querySelector('.reply-inp');
+    if(replyInp) replyInp.addEventListener('change', async (e)=>{ o.followUpReply = e.target.value; await saveOrders(); });
+    const resolvedSel = row.querySelector('.resolved-sel');
+    if(resolvedSel) resolvedSel.addEventListener('change', async (e)=>{ o.resolved = e.target.value === 'yes'; await saveOrders(); render(); });
+  });
+}
+
+function renderTable(vis){
+  const showRepCol = session.role !== 'rep';
+  return `
+  <table>
+    <thead><tr>
+      <th>العميل</th><th>الهاتف</th><th>الشركة</th>
+      ${showRepCol ? '<th>المندوب</th>' : ''}
+      <th>واتس</th><th>اتصال</th><th>المحاولات</th><th>الحالة</th>
+      <th>ملاحظات المندوب</th><th>رد المتابعة</th><th>تم الحل؟</th>
+    </tr></thead>
+    <tbody>
+      ${vis.map(o=>{
+        const canEditRep = session.role === 'rep';
+        const canEditFollow = session.role === 'followup' || session.role === 'admin';
+        return `
+        <tr id="row_${o.id}">
+          <td>${escapeHtml(o.customerName||'')}</td>
+          <td>${escapeHtml(o.phone||'')}</td>
+          <td>${escapeHtml(o.company||'')}</td>
+          ${showRepCol ? `<td>${escapeHtml(o.rep||'')}</td>` : ''}
+          <td><input type="checkbox" class="chk wa-chk" ${o.whatsappSent?'checked':''} ${canEditRep?'':'disabled'}></td>
+          <td><input type="checkbox" class="chk call-chk" ${o.called?'checked':''} ${canEditRep?'':'disabled'}></td>
+          <td><span class="attempts-pill">${computeAttempts(o)}</span></td>
+          <td>${canEditRep
+              ? `<select class="mini status-sel">${STATUSES.map(s=>`<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select>`
+              : `<span class="status-tag ${statusClass(o.status||'اتصال جاري')}">${escapeHtml(o.status||'اتصال جاري')}</span>`}</td>
+          <td>${canEditRep ? `<input type="text" class="mini notes-inp" value="${escapeAttr(o.notes||'')}">` : escapeHtml(o.notes||'—')}</td>
+          <td>${canEditFollow ? `<input type="text" class="mini reply-inp" value="${escapeAttr(o.followUpReply||'')}">` : escapeHtml(o.followUpReply||'—')}</td>
+          <td>${canEditFollow
+              ? `<select class="mini resolved-sel"><option value="no" ${!o.resolved?'selected':''}>لا</option><option value="yes" ${o.resolved?'selected':''}>تم</option></select>`
+              : `<span class="${o.resolved?'resolved-yes':'resolved-no'}">${o.resolved?'تم':'لا'}</span>`}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+function openOrderModal(){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `
+    <div class="modal">
+      <h3>إضافة أوردر جديد</h3>
+      <div class="field"><label>اسم العميل</label><input type="text" id="m_customer"></div>
+      <div class="field"><label>رقم الهاتف</label><input type="text" id="m_phone"></div>
+      <div class="field"><label>الشركة</label><input type="text" id="m_company"></div>
+      <div class="field"><label>السعر</label><input type="text" id="m_price"></div>
+      <div class="field">
+        <label>المندوب المسؤول</label>
+        <input type="text" id="m_rep" list="repsList" placeholder="اسم المندوب بالظبط">
+        <datalist id="repsList">${reps.map(r=>`<option value="${escapeAttr(r.name)}">`).join('')}</datalist>
+        <div class="small-note">لازم الاسم يتطابق مع اسم المندوب لما يسجل دخول.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="m_cancel">إلغاء</button>
+        <button class="btn-save" id="m_save">حفظ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bg);
+
+  document.getElementById('m_cancel').addEventListener('click', ()=> bg.remove());
+  document.getElementById('m_save').addEventListener('click', async ()=>{
+    const customerName = document.getElementById('m_customer').value.trim();
+    const phone = document.getElementById('m_phone').value.trim();
+    const company = document.getElementById('m_company').value.trim();
+    const price = document.getElementById('m_price').value.trim();
+    const rep = document.getElementById('m_rep').value.trim();
+    if(!customerName || !rep){ alert('اكتب على الأقل اسم العميل والمندوب.'); return; }
+    orders.push({
+      id: uid(), customerName, phone, company, price, rep,
+      whatsappSent:false, called:false, status:'اتصال جاري',
+      notes:'', followUpReply:'', resolved:false
+    });
+    await saveOrders();
+    bg.remove();
+    render();
+  });
+}
+
+loadAll();
+</script>
+</body>
+</html>
